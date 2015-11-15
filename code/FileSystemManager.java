@@ -4,13 +4,13 @@ package com.example.antontsarikovich.helper;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.nfc.Tag;
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -34,5 +34,23 @@ public class FileSystemManager  {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("saved text", text);
         editor.commit();
+    }
+    public void saveToSD(String text) {
+        if(!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            Log.d("SDLOG", "SD nedostupna " + Environment.getExternalStorageState());
+            return;
+        }
+        File sdPath = Environment.getExternalStorageDirectory();
+        sdPath = new File(sdPath.getAbsolutePath() + "/" + "apk");
+        File sdFile = new File(sdPath,"Timetable");
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(sdFile));
+            bufferedWriter.write(text);
+            bufferedWriter.close();
+            Log.d("SDLOG", "Success");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }
