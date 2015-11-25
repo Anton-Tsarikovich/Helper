@@ -5,7 +5,6 @@ import android.util.Log;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
 
 /**
  * Created by Anton Tsarikovich on 15.11.2015.
@@ -29,7 +28,7 @@ public class NetworkDownloader {
             InputStream input = conection.getInputStream();
             byte resultArray[] = new byte[0];
             int count;
-            byte data[] = new byte[128];
+            byte data[] = new byte[512];
             while ((count = input.read(data)) != -1) {
                 Log.d(TAG, "read " + count);
                 Log.d(TAG, "String " + new String(data));

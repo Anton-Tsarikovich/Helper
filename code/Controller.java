@@ -13,11 +13,6 @@ import android.widget.TextView;
 import android.os.AsyncTask;
 
 import com.example.antontsarikovich.helper.models.StudentGroups;
-
-import org.simpleframework.xml.core.Persister;
-
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.concurrent.ExecutionException;
 
 
@@ -28,6 +23,8 @@ public class Controller extends Activity {
     private TextView textNumberGroup;
     private EditText getNumber;
     private Button downloadButton;
+    StudentGroups groups;
+    XMLParser xmlParser;
     private NetworkDownloader networkDownloader;
 
     private static final String TAG = "LOGS";
@@ -36,43 +33,28 @@ public class Controller extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_first_start);
-
-        Log.d(TAG, "View created");
         initialization();
-        Log.d(TAG, "initialization");
+        numberOfGroup = fileSystemManager.loadSettings();
+        if(numberOfGroup.isEmpty()) {
+            setContentView(R.layout.activity_first_start);
+        }
+        initialization();
+
         View.OnClickListener clickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 switch(v.getId()) {
                     case R.id.downloadButton:
-                        byte array[] = new byte[0];
+                        Log.d(TAG, "pressed");
+                        download(getResources().getString(R.string.all_group_url), "AllTimetable", null);
+                        byte tempArray[] = new byte[0];
                         try {
-                            array = new GoDownload().execute(getResources().getString(R.string.all_group_url)).get();
+                            tempArray = new GoDownload().execute(getResources().getString(R.string.this_group_url) + groups.getElements()).get();
                         } catch (InterruptedException | ExecutionException e) {
                             Log.e(TAG,e.getMessage());
-                       }
-                        setContentView(R.layout.timetable_layout);
-                        textNumberGroup = (TextView) findViewById(R.id.someTextView);
-                        if(array != null)
-                            Log.e(TAG, new String(array));
-                        else
-                            Log.e(TAG, "null");
-
-                        String str  = new String(array);
-                        String str2 = str.substring(55);
-                        fileSystemManager.saveToSD(str2);
-
-                        Log.d(TAG, "str 1 " + str);
-                        Log.d(TAG," str 2 " +str2);
-
-                        Reader reader = new StringReader(str2);
-                        Persister serializer = new Persister();
-                        try {
-                            StudentGroups groups = serializer.read(StudentGroups.class, reader, false);
-
-                        } catch (Exception e) {
-                            Log.e(TAG,e.getMessage());
                         }
+                        fileSystemManager.saveToSD(new String(tempArray), "Timetable");
+
                 }
             }
         };
@@ -86,7 +68,22 @@ public class Controller extends Activity {
         getMenuInflater().inflate(R.menu.menu_controller, menu);
         return true;
     }
-
+    private void download(String url, String nameTimetable, String group) {
+        String finalUrl = url;
+        if (group != null) {
+            finalUrl = finalUrl + group;
+        }
+        byte array[] = new byte[0];
+        try {
+            array = new GoDownload().execute(finalUrl).get();
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG,e.getMessage());
+        }
+        String str  = new String(array);
+        final String substring = str.substring(55);
+        fileSystemManager.saveToSD(substring, nameTimetable);
+        groups = xmlParser.parseAllXML(substring);
+    }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -95,6 +92,7 @@ public class Controller extends Activity {
     }
     private void initialization() {
         fileSystemManager = new FileSystemManager(Controller.this);
+        xmlParser = new XMLParser();
        // numberOfGroup = fileSystemManager.loadSettings();
         getNumber = (EditText) findViewById(R.id.getNumberGroup);
         downloadButton = (Button) findViewById(R.id.downloadButton);
@@ -107,15 +105,7 @@ public class Controller extends Activity {
         }
         protected byte[] doInBackground(String... urls) {
             return networkDownloader.getFile(urls);
-
         }
-
-
-
-
-
-
-
     }
 
 }
