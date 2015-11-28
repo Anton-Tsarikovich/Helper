@@ -3,6 +3,7 @@ package com.example.antontsarikovich.helper;
 import android.util.Log;
 
 import com.example.antontsarikovich.helper.models.StudentGroups;
+import com.example.antontsarikovich.helper.models.Timetable;
 
 import org.simpleframework.xml.core.Persister;
 
@@ -16,6 +17,7 @@ public class XMLParser {
     private Reader reader;
     private Persister serializer;
     private StudentGroups groups;
+    private Timetable timetable;
     public XMLParser(){
         serializer = new Persister();
     }
@@ -28,6 +30,15 @@ public class XMLParser {
             Log.e("LOGS", e.getMessage());
         }
         return groups;
+    }
+    public Timetable parseTimetable(String XLMString) {
+        reader = new StringReader(XLMString);
+        try {
+            timetable = serializer.read(Timetable.class, reader, false);
+        } catch (Exception e) {
+            Log.e("LOGS", e.getMessage());
+        }
+        return timetable;
     }
 
 }

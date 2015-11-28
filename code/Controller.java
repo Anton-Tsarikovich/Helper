@@ -13,6 +13,8 @@ import android.widget.TextView;
 import android.os.AsyncTask;
 
 import com.example.antontsarikovich.helper.models.StudentGroups;
+import com.example.antontsarikovich.helper.models.Timetable;
+
 import java.util.concurrent.ExecutionException;
 
 
@@ -23,6 +25,7 @@ public class Controller extends Activity {
     private TextView textNumberGroup;
     private EditText getNumber;
     private Button downloadButton;
+    private Timetable timetable;
     StudentGroups groups;
     XMLParser xmlParser;
     private NetworkDownloader networkDownloader;
@@ -46,28 +49,34 @@ public class Controller extends Activity {
                 switch(v.getId()) {
                     case R.id.downloadButton:
                         Log.d(TAG, "pressed");
-                        download(getResources().getString(R.string.all_group_url), "AllTimetable", null);
+                       /* download(getResources().getString(R.string.all_group_url), "AllTimetable", null);
                         byte tempArray[] = new byte[0];
                         try {
                             tempArray = new GoDownload().execute(getResources().getString(R.string.this_group_url) + groups.getElements()).get();
                         } catch (InterruptedException | ExecutionException e) {
                             Log.e(TAG,e.getMessage());
-                        }
-                        fileSystemManager.saveToSD(new String(tempArray), "Timetable");
+                        }*/
+
+                       // String str  = new String(tempArray);
+                        String str = fileSystemManager.readFromSD("Timetable");
+                        final String substring = str.substring(55);
+
+                            timetable = xmlParser.parseTimetable(substring);
+                       // fileSystemManager.saveToSD(new String(tempArray), "Timetable");
 
                 }
             }
         };
-        downloadButton.setOnClickListener(clickListener);
+            downloadButton.setOnClickListener(clickListener);
 
 
-    }
+        }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_controller, menu);
-        return true;
-    }
+        @Override
+        public boolean onCreateOptionsMenu(Menu menu) {
+            getMenuInflater().inflate(R.menu.menu_controller, menu);
+            return true;
+        }
     private void download(String url, String nameTimetable, String group) {
         String finalUrl = url;
         if (group != null) {

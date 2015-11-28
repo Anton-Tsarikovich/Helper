@@ -7,8 +7,11 @@ import android.content.SharedPreferences;
 import android.os.Environment;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -49,6 +52,21 @@ public class FileSystemManager  {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+    }
+    public String readFromSD(String name) {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            Log.e("LOGS", "SD not access");
+            return null;
+        }
+        File sdPath = Environment.getExternalStorageDirectory();
+        sdPath = new File(sdPath.getAbsolutePath() + "/" + "apk");
+        File sdFile = new File(sdPath, name);
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(sdFile));
+            return bufferedReader.readLine();
+        } catch (IOException e) {
+            Log.e("LOGS", e.getMessage());
+        }
+        return null;
     }
 }
