@@ -18,11 +18,9 @@ public class StudentGroups {
 
     @ElementList(inline = true, name = "studentGroup")
     public List<StudentGroup> groupList;
-    public String getElements() {
-        Log.d(TAG, groupList.get(0).getName());
+    public String getElement(String numberOfGroup) {
         for (int i = 0; i < groupList.size(); i++) {
             if (groupList.get(i).getName().equals(MyGroup)) {
-                Log.d(TAG, "ok");
                 Log.d(TAG, Integer.toString(groupList.get(i).getId()));
                 return Integer.toString(groupList.get(i).getId());
             }
