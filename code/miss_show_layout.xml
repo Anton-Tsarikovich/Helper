@@ -8,8 +8,8 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Show Miss"
-        android:id="@+id/showMissButton"
+        android:text="Back"
+        android:id="@+id/backMiss"
         android:layout_gravity="center_horizontal" />
 
     <TextView
@@ -21,12 +21,13 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/scroll">
+        android:id="@+id/scrollMiss">
         <LinearLayout
-            android:id="@+id/linLayout"
+            android:id="@+id/missLinLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

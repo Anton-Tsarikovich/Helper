@@ -2,6 +2,7 @@ package com.example.antontsarikovich.helper;
 
 import android.util.Log;
 
+import com.example.antontsarikovich.helper.Group.Group;
 import com.example.antontsarikovich.helper.models.StudentGroups;
 import com.example.antontsarikovich.helper.models.Timetable;
 
@@ -18,6 +19,7 @@ public class XMLParser {
     private Persister serializer;
     private StudentGroups groups;
     private Timetable timetable;
+    private Group group;
     public XMLParser(){
         serializer = new Persister();
     }
@@ -39,6 +41,15 @@ public class XMLParser {
             Log.e("LOGS", e.getMessage());
         }
         return timetable;
+    }
+    public Group parseNames(String XLMString) {
+        reader = new StringReader(XLMString);
+        try {
+            group = serializer.read(Group.class, reader, false);
+        } catch (Exception e) {
+            Log.e("LOGS", e.getMessage());
+        }
+        return group;
     }
 
 }

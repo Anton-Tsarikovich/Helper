@@ -5,7 +5,9 @@ import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by Anton Tsarikovich on 27.11.2015.
@@ -94,6 +96,17 @@ public class Subject {
     @Element(name = "zaoch")
     public void setZaoch(String zaoch) {
         this.zaoch = zaoch;
+    }
+    public boolean compareWeek(String week) {
+        for(Object object: weekNumbers) {
+            if(object.equals("0")) {
+                return true;
+            }
+            if(object.equals(week)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

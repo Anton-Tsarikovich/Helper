@@ -14,13 +14,12 @@ import java.util.List;
 @Root(name = "studentGroupXmlModels")
 public class StudentGroups {
     private final static String TAG = "LOGS";
-    private final static String MyGroup = "350502";
 
     @ElementList(inline = true, name = "studentGroup")
     public List<StudentGroup> groupList;
     public String getElement(String numberOfGroup) {
         for (int i = 0; i < groupList.size(); i++) {
-            if (groupList.get(i).getName().equals(MyGroup)) {
+            if (groupList.get(i).getName().equals(numberOfGroup)) {
                 Log.d(TAG, Integer.toString(groupList.get(i).getId()));
                 return Integer.toString(groupList.get(i).getId());
             }

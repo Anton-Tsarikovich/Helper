@@ -69,4 +69,22 @@ public class FileSystemManager  {
         }
         return null;
     }
+
+    public String readFromSDSpecialFor(String name) {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            Log.e("LOGS", "SD not access");
+            return null;
+        }
+        File sdPath = Environment.getExternalStorageDirectory();
+        sdPath = new File(sdPath.getAbsolutePath() + "/" + "apk");
+        File sdFile = new File(sdPath, name);
+        String str = "";
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(sdFile));
+            str += bufferedReader.readLine();
+        } catch (IOException e) {
+            Log.e("LOGS", e.getMessage());
+        }
+        return str;
+    }
 }
