@@ -2,8 +2,7 @@ package com.example.antontsarikovich.helper;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,12 +25,8 @@ import com.example.antontsarikovich.helper.Group.Group;
 import com.example.antontsarikovich.helper.models.StudentGroups;
 import com.example.antontsarikovich.helper.models.Timetable;
 
-import org.w3c.dom.Text;
-
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -45,7 +40,6 @@ public class Controller extends Activity {
             put("ПЗ", 2);
         }
     };
-
     @SuppressLint("UseSparseArrays")
     private Map<Integer, Integer> monthDays = new HashMap<Integer, Integer>() {
         {
@@ -62,20 +56,19 @@ public class Controller extends Activity {
             put(12, 31);
         }
     };
+    private Calendar calendar = Calendar.getInstance();
     private Group group;
-    private String studentsNames;
     private ListView listView;
     private String[] names;
     private FileSystemManager fileSystemManager;
     private String numberOfGroup;
     private EditText getNumber;
-    private Button downloadButton;
     private Timetable timetable;
     private int colors[] = new int[3];
     private StudentGroups groups;
     private XMLParser xmlParser;
     private NetworkDownloader networkDownloader;
-
+    private ProgressDialog progressDialog;
 
     private static final String TAG = "LOGS";
 
@@ -86,6 +79,8 @@ public class Controller extends Activity {
         initialization();
         if (numberOfGroup.isEmpty()) {
             setContentView(R.layout.activity_first_start);
+            getNumber = (EditText) findViewById(R.id.getNumberGroup);
+            Button downloadButton = (Button) findViewById(R.id.downloadButton);
             View.OnClickListener clickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -94,13 +89,13 @@ public class Controller extends Activity {
                             if (getNumber.getText().toString().isEmpty() && getNumber.getText().length() != 6) {
                                 break;
                             }
-                            Log.d(TAG, "lol");
-                            showDialog(1);
+
+                            showProgress();
+                            numberOfGroup = getNumber.getText().toString();
                             fileSystemManager.saveSettings(getNumber.getText().toString());
                             download(getResources().getString(R.string.all_group_url), "AllTimetable", null);
                             download(getResources().getString(R.string.this_group_url) + groups.getElement(getNumber.getText().toString()), getNumber.getText().toString(), getNumber.getText().toString());
-                            showDialog(0);
-                            setContentView(R.layout.timetable_layout);
+                            iHaveTimetable();
                             Log.d(TAG, "Success");
                     }
 
@@ -132,9 +127,6 @@ public class Controller extends Activity {
         if(group == null) {
             groups = xmlParser.parseAllXML(substring);
         }
-        else {
-            timetable = xmlParser.parseTimetable(substring);
-        }
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -146,9 +138,21 @@ public class Controller extends Activity {
         fileSystemManager = new FileSystemManager(Controller.this);
         xmlParser = new XMLParser();
         numberOfGroup = fileSystemManager.loadSettings();
-        getNumber = (EditText) findViewById(R.id.getNumberGroup);
-        downloadButton = (Button) findViewById(R.id.downloadButton);
         networkDownloader = new NetworkDownloader();
+
+    }
+
+    public void showProgress() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog = ProgressDialog.show(this, "",
+                "Loading. Please wait...");
+        progressDialog.setCancelable(false);
+    }
+
+    public void hideProgress() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
     }
 
     private class GoDownload extends AsyncTask<String, Void, byte[]> {
@@ -160,47 +164,29 @@ public class Controller extends Activity {
         }
     }
 
-    protected Dialog onCreateDialog(int id) {
-        if(id == 1) {
-            AlertDialog.Builder adb = new AlertDialog.Builder(this);
-            adb.setTitle("Загрузка");
-            adb.setMessage("Подождите пожалуйста");
-            return adb.create();
-        }
-        return super.onCreateDialog(id);
-    }
-
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        super.onPrepareDialog(id, dialog);
-        Log.d(TAG, "prepareDialog");
-        if(id == 1) {
-            ((AlertDialog)dialog).setMessage("Подождите, пожалуйста");
-        }
-    }
-
     private void iHaveTimetable(){
         String groupTimetable = fileSystemManager.readFromSD(numberOfGroup);
         timetable = xmlParser.parseTimetable(groupTimetable);
-        Calendar calendar = Calendar.getInstance();
         int day = calendar.get(Calendar.DAY_OF_WEEK);
         int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
         int month = calendar.get(Calendar.MONTH);
         int year = calendar.get(Calendar.YEAR);
         int week = getWeek(dayOfMonth, month, year);
-        studentsNames = fileSystemManager.readFromSDSpecialFor(numberOfGroup + ".txt");
         String temp = fileSystemManager.readFromSDSpecialFor(numberOfGroup + ".txt");
         String tempTemp = temp.substring(1);
         group = xmlParser.parseNames(tempTemp);
         String tempStr = fileSystemManager.readFromSD("miss" + numberOfGroup);
-        int miss = 0;
+        String miss = "";
         int counter = 0;
         for(int i = 0; i < tempStr.length();i++){
             if(tempStr.charAt(i) == ' ') {
-                group.studentsList.get(counter).setLoadMiss(miss);
+                group.studentsList.get(counter).setLoadMiss(Integer.parseInt(miss));
                 counter++;
+                miss = "";
                 continue;
             }
-            miss = Integer.parseInt(String.valueOf(tempStr.charAt(i)));
+        int tempInt = Integer.parseInt(String.valueOf(tempStr.charAt(i)));
+        miss += Integer.toString(tempInt);
 
         }
 
@@ -259,6 +245,7 @@ public class Controller extends Activity {
         colors[0] = Color.GREEN;
         colors[1] = Color.RED;
         colors[2] = Color.YELLOW;
+        hideProgress();
         setContentView(R.layout.timetable_layout);
         Button showMissButton = (Button) findViewById(R.id.showMissButton);
         View.OnClickListener showClickListener = new View.OnClickListener() {
@@ -269,44 +256,55 @@ public class Controller extends Activity {
         };
         showMissButton.setOnClickListener(showClickListener);
         LinearLayout linearLayout = (LinearLayout) findViewById(R.id.linLayout);
+        int thisDay = calendar.get(Calendar.DAY_OF_WEEK);
         LayoutInflater layoutInflater = getLayoutInflater();
-        for(int i = 0;i < timetable.dayTimetables.get(day - 2).subjects.size(); i++) {
-            if (timetable.dayTimetables.get(day - 2).subjects.get(i).compareWeek(Integer.toString(week))) {
-                View item = layoutInflater.inflate(R.layout.item_subject, linearLayout, false);
-                TextView subject = (TextView) item.findViewById(R.id.subject);
-                subject.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getSubject());
+        if(thisDay != 1) {
+            for (int i = 0; i < timetable.dayTimetables.get(day - 2).subjects.size(); i++) {
+                if (timetable.dayTimetables.get(day - 2).subjects.get(i).compareWeek(Integer.toString(week))) {
+                    View item = layoutInflater.inflate(R.layout.item_subject, linearLayout, false);
+                    TextView subject = (TextView) item.findViewById(R.id.subject);
+                    subject.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getSubject());
 
-                TextView time = (TextView) item.findViewById(R.id.time);
-                time.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getLessonTime());
+                    TextView time = (TextView) item.findViewById(R.id.time);
+                    time.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getLessonTime());
+                    if (!timetable.dayTimetables.get(day - 2).subjects.get(i).getSubject().equals("ФизК")) {
+                        TextView auditory = (TextView) item.findViewById(R.id.auditorytory);
+                        auditory.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getAuditory());
 
-                TextView auditory = (TextView) item.findViewById(R.id.auditorytory);
-                auditory.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).getAuditory());
-
-                TextView name = (TextView) item.findViewById(R.id.name);
-                name.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getLastName() +
-                        " " + timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getFirstName() +
-                        " " + timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getMiddleName());
-                final int finalDay = day - 2;
-                final int finalInt = i;
-                Button table = (Button) item.findViewById(R.id.goTable);
-                View.OnClickListener clickListener = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        showList(day, week, timetable.dayTimetables.get(day - 2).subjects.get(finalInt).getSubject());
-                        Log.d(TAG, timetable.dayTimetables.get(finalDay).subjects.get(finalInt).getSubject());
+                        TextView name = (TextView) item.findViewById(R.id.name);
+                        name.setText(timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getLastName() +
+                                " " + timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getFirstName() +
+                                " " + timetable.dayTimetables.get(day - 2).subjects.get(i).employee.get(0).getMiddleName());
                     }
-                };
-                table.setOnClickListener(clickListener);
-                item.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
-                for (Map.Entry<String, Integer> entry : colorType.entrySet()) {
-                    if (entry.getKey().equals(timetable.dayTimetables.get(day - 2).subjects.get(i).getLessonType())) {
-                        item.setBackgroundColor(colors[entry.getValue()]);
+                    final int finalDay = day - 2;
+                    final int finalInt = i;
+                    Button table = (Button) item.findViewById(R.id.goTable);
+                    View.OnClickListener clickListener = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            showList(day, week, timetable.dayTimetables.get(day - 2).subjects.get(finalInt).getSubject());
+                            Log.d(TAG, timetable.dayTimetables.get(finalDay).subjects.get(finalInt).getSubject());
+                        }
+                    };
+                    table.setOnClickListener(clickListener);
+
+                    item.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    for (Map.Entry<String, Integer> entry : colorType.entrySet()) {
+                        if (entry.getKey().equals(timetable.dayTimetables.get(day - 2).subjects.get(i).getLessonType())) {
+                            item.setBackgroundColor(colors[entry.getValue()]);
+                        }
                     }
+                    linearLayout.addView(item);
                 }
-                linearLayout.addView(item);
             }
-        }
+        } else {
+            View item = layoutInflater.inflate(R.layout.item_subject, linearLayout, false);
+            TextView subject = (TextView) item.findViewById(R.id.subject);
+            subject.setText("Выходной");
 
+            item.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+            linearLayout.addView(item);
+        }
 
 
 
