@@ -2,6 +2,8 @@ package com.example.antontsarikovich.helper;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -56,6 +58,7 @@ public class Controller extends Activity {
             put(12, 31);
         }
     };
+    private Dialog dialog;
     private Calendar calendar = Calendar.getInstance();
     private Group group;
     private ListView listView;
@@ -73,7 +76,7 @@ public class Controller extends Activity {
     private static final String TAG = "LOGS";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_first_start);
         initialization();
@@ -86,15 +89,19 @@ public class Controller extends Activity {
                 public void onClick(View v) {
                     switch (v.getId()) {
                         case R.id.downloadButton:
-                            if (getNumber.getText().toString().isEmpty() && getNumber.getText().length() != 6) {
+                            if (getNumber.getText().toString().isEmpty() || getNumber.getText().toString().length() != 6) {
+                                showDialog(1);
                                 break;
                             }
 
-                            showProgress();
                             numberOfGroup = getNumber.getText().toString();
                             fileSystemManager.saveSettings(getNumber.getText().toString());
-                            download(getResources().getString(R.string.all_group_url), "AllTimetable", null);
-                            download(getResources().getString(R.string.this_group_url) + groups.getElement(getNumber.getText().toString()), getNumber.getText().toString(), getNumber.getText().toString());
+                            if(!download(getResources().getString(R.string.all_group_url), "AllTimetable", null)){
+                                break;
+                            }
+                            if(!download(getResources().getString(R.string.this_group_url) + groups.getElement(getNumber.getText().toString()), getNumber.getText().toString(), getNumber.getText().toString())) {
+                                break;
+                            }
                             iHaveTimetable();
                             Log.d(TAG, "Success");
                     }
@@ -113,7 +120,7 @@ public class Controller extends Activity {
         getMenuInflater().inflate(R.menu.menu_controller, menu);
         return true;
     }
-    private void download(String url, String nameTimetable, String group) {
+    private boolean download(String url, String nameTimetable, String group) {
 
         byte array[] = new byte[0];
         try {
@@ -121,12 +128,17 @@ public class Controller extends Activity {
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG,e.getMessage());
         }
+        if (array == null) {
+            showDialog(2);
+            return false;
+        }
         String str  = new String(array);
         final String substring = str.substring(55);
         fileSystemManager.saveToSD(substring, nameTimetable);
         if(group == null) {
             groups = xmlParser.parseAllXML(substring);
         }
+        return true;
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -142,18 +154,6 @@ public class Controller extends Activity {
 
     }
 
-    public void showProgress() {
-        progressDialog = new ProgressDialog(this);
-        progressDialog = ProgressDialog.show(this, "",
-                "Loading. Please wait...");
-        progressDialog.setCancelable(false);
-    }
-
-    public void hideProgress() {
-        if (progressDialog != null && progressDialog.isShowing()) {
-            progressDialog.dismiss();
-        }
-    }
 
     private class GoDownload extends AsyncTask<String, Void, byte[]> {
 
@@ -245,7 +245,6 @@ public class Controller extends Activity {
         colors[0] = Color.GREEN;
         colors[1] = Color.RED;
         colors[2] = Color.YELLOW;
-        hideProgress();
         setContentView(R.layout.timetable_layout);
         Button showMissButton = (Button) findViewById(R.id.showMissButton);
         View.OnClickListener showClickListener = new View.OnClickListener() {
@@ -298,16 +297,10 @@ public class Controller extends Activity {
                 }
             }
         } else {
-            View item = layoutInflater.inflate(R.layout.item_subject, linearLayout, false);
-            TextView subject = (TextView) item.findViewById(R.id.subject);
-            subject.setText("Выходной");
-
+            View item = layoutInflater.inflate(R.layout.weekend_layout, linearLayout, false);
             item.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
             linearLayout.addView(item);
         }
-
-
-
     }
 
     private void showList(final int day,final int week,final String sub) {
@@ -398,6 +391,26 @@ public class Controller extends Activity {
             back.setOnClickListener(clickListener);
             linLayout.addView(item);
         }
+    }
+
+    protected Dialog onCreateDialog(int id) {
+        if(id == 1) {
+            AlertDialog.Builder aldb = new AlertDialog.Builder(this);
+            aldb.setTitle("Ошибка");
+            aldb.setMessage("Неправильный ввод, попробуйте снова");
+            aldb.setPositiveButton("OK", null);
+            dialog = aldb.create();
+            return dialog;
+        }
+        if(id == 2) {
+            AlertDialog.Builder aldb = new AlertDialog.Builder(this);
+            aldb.setTitle("Ошибка");
+            aldb.setMessage("Проверьте подключение к интернету");
+            aldb.setPositiveButton("OK", null);
+            dialog = aldb.create();
+            return dialog;
+        }
+        return super.onCreateDialog(id);
     }
 
 }
